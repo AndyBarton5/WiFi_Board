@@ -71,6 +71,7 @@ int subscribe_publish_sensor_values(void);
 
 /* Private variables ---------------------------------------------------------*/
 static char ledstate[] = { "Off" };
+static int RND_NUM = 0;
 static char cPTopicName[MAX_SHADOW_TOPIC_LENGTH_BYTES] = "";
 static char cSTopicName[MAX_SHADOW_TOPIC_LENGTH_BYTES] = "";
 /* Private macro -------------------------------------------------------------*/
@@ -143,7 +144,7 @@ void MQTTcallbackHandler(AWS_IoT_Client *pClient, char *topicName, uint16_t topi
   msg_info("\nMQTT subscribe callback......\n");
   msg_info("%.*s\n", (int)params->payloadLen, (char *)params->payload);
   
-  /* If a new desired LED state is received, change the LED state. */
+  /* If a new desired LED state is received, change the LED state.
   if (strstr((char *) params->payload, "\"desired\":{\"LED_value\":\"On\"}") != NULL)
   {
     Led_On();
@@ -158,7 +159,10 @@ void MQTTcallbackHandler(AWS_IoT_Client *pClient, char *topicName, uint16_t topi
     msg_info("LED Off!\n");
     msg = msg_off;
   }
+  */
   
+  //msg = "{\"state\":{\"reported\":{\"RND_Number\":\"RND_NUM\"}}}";
+
   /* Report the new LED state to the MQTT broker. */
   if (msg != NULL)
   { 
@@ -168,7 +172,8 @@ void MQTTcallbackHandler(AWS_IoT_Client *pClient, char *topicName, uint16_t topi
 
     if (rc == AWS_SUCCESS)
     {
-      msg_info("\nPublished the new LED status to topic %s:", cPTopicName);
+      //msg_info("\nPublished the new LED status to topic %s:", cPTopicName);
+      msg_info("\nPublished the Random Number to topic %s:", cPTopicName);
       msg_info("%s\n", msg);
     }
   }
@@ -351,7 +356,7 @@ int subscribe_publish_sensor_values(void)
     
     if (bp_pushed == BP_SINGLE_PUSH)
     {
-      if(strstr(ledstate, "Off")!= NULL)
+      /*if(strstr(ledstate, "Off")!= NULL)
       {
         strcpy(ledstate, "On");
       }
@@ -359,14 +364,20 @@ int subscribe_publish_sensor_values(void)
       {
         strcpy(ledstate, "Off");
       }
+      */
+      //printf("Sending the desired LED state to AWS.\n");
+      printf("Sending a random number to AWS.\n");
       
-      printf("Sending the desired LED state to AWS.\n");
-      
+      // create a random number
+      RND_NUM = rand() % 101 + 1;
+      char buffer[20];
+      itoa(RND_NUM, buffer, 10);
+
       /* create desired message */
       memset(cPayload, 0, sizeof(cPayload));
       strcat(cPayload, aws_json_desired);
-      strcat(cPayload, "{\"LED_value\":\"");
-      strcat(cPayload, ledstate);
+      strcat(cPayload, "{\"RND_value\":\"");
+      strcat(cPayload, buffer);
       strcat(cPayload, "\"}");
       strcat(cPayload, aws_json_post);
       
