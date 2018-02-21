@@ -179,7 +179,7 @@ int PrepareMqttPayload(char * PayloadBuffer, int PayloadSize, char * deviceID)
              GYR_Value[0], GYR_Value[1], GYR_Value[2],
              MAG_Value[0], MAG_Value[1], MAG_Value[2] );
   }
-  else // We're using this one
+  else
   {
   snprintfreturn = snprintf( Buff, BuffSize, "{\n \"state\": {\n  \"reported\": {\n"
            "   \"temperature\": %.2f,\n   \"humidity\": %.2f,\n   \"pressure\": %.2f,\n   \"proximity\": %d,\n"

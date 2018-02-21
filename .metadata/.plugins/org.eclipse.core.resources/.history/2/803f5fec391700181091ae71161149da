@@ -58,9 +58,6 @@
 #include "sensors_data.h"
 #include "msg.h"
 
-#include "stm32l475e_iot01_hsensor.h"
-
-
 void MQTTcallbackHandler(AWS_IoT_Client *pClient, char *topicName, uint16_t topicNameLen, IoT_Publish_Message_Params *params, void *pData);
 int subscribe_publish_sensor_values(void);
 
@@ -83,7 +80,6 @@ static char cSTopicName[MAX_SHADOW_TOPIC_LENGTH_BYTES] = "";
 * @brief This parameter will avoid infinite loop of publish and exit the program after certain number of publishes
 */
 static uint32_t publishCount = 60;
-static float PreviousHumidityValue = 0;
 
 /* Functions Definition ------------------------------------------------------*/
 
@@ -387,7 +383,7 @@ int subscribe_publish_sensor_values(void)
       
       paramsQOS1.payloadLen = strlen(cPayload) + 1;
 
-      do
+      do 
       {
         rc = aws_iot_mqtt_publish(&client, cPTopicName, strlen(cPTopicName), &paramsQOS1);
 
@@ -406,11 +402,7 @@ int subscribe_publish_sensor_values(void)
     
 #ifdef  SENSOR
     timeCounter ++;
-    float currentHValue = BSP_HSENSOR_ReadHumidity();
-    //if (timeCounter >= TIMER_COUNT_FOR_SENSOR_PUBLISH)
-    // if outisde change limit, report
-    if (PreviousHumidityValue - currentHValue > 2 ||
-    	PreviousHumidityValue - currentHValue < -2   )
+    if (timeCounter >= TIMER_COUNT_FOR_SENSOR_PUBLISH)  
     {
       timeCounter = 0;
             
@@ -434,8 +426,6 @@ int subscribe_publish_sensor_values(void)
         }
       } while((MQTT_REQUEST_TIMEOUT_ERROR == rc) && (publishCount > 0 || infinitePublishFlag));
     }
-
-    PreviousHumidityValue = currentHValue;
 #endif
 
 

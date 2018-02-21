@@ -408,9 +408,8 @@ int subscribe_publish_sensor_values(void)
     timeCounter ++;
     float currentHValue = BSP_HSENSOR_ReadHumidity();
     //if (timeCounter >= TIMER_COUNT_FOR_SENSOR_PUBLISH)
-    // if outisde change limit, report
-    if (PreviousHumidityValue - currentHValue > 2 ||
-    	PreviousHumidityValue - currentHValue < -2   )
+    if (PreviousHumidityValue - currentHValue > 1 ||
+    	PreviousHumidityValue - currentHValue < -1   )
     {
       timeCounter = 0;
             
