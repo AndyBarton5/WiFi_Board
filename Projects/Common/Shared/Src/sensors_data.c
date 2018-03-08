@@ -179,14 +179,14 @@ int PrepareMqttPayload(char * PayloadBuffer, int PayloadSize, char * deviceID)
              GYR_Value[0], GYR_Value[1], GYR_Value[2],
              MAG_Value[0], MAG_Value[1], MAG_Value[2] );
   }
-  else // We're using this one
+  else // We're using this one //  "state": {
+	  	  	  	  	  	  	   //"reported": {
   {
-  snprintfreturn = snprintf( Buff, BuffSize, "{\n \"state\": {\n  \"reported\": {\n"
-           "   \"temperature\": %.2f,\n   \"humidity\": %.2f,\n   \"pressure\": %.2f,\n   \"proximity\": %d,\n"
-           "   \"acc_x\": %d, \"acc_y\": %d, \"acc_z\": %d,\n"
-           "   \"gyr_x\": %.0f, \"gyr_y\": %.0f, \"gyr_z\": %.0f,\n"
-           "   \"mag_x\": %d, \"mag_y\": %d, \"mag_z\": %d\n"
-           "  }\n }\n}",
+  snprintfreturn = snprintf( Buff, BuffSize,
+		   "{\"temperature\": %.2f, \"humidity\": %.2f, \"pressure\": %.2f, \"proximity\": %d, "
+           "\"acc_x\": %d, \"acc_y\": %d, \"acc_z\": %d, "
+           "\"gyr_x\": %.0f, \"gyr_y\": %.0f, \"gyr_z\": %.0f, "
+           "\"mag_x\": %d, \"mag_y\": %d, \"mag_z\": %d }",
            TEMPERATURE_Value, HUMIDITY_Value, PRESSURE_Value, PROXIMITY_Value,
            ACC_Value[0], ACC_Value[1], ACC_Value[2],
            GYR_Value[0], GYR_Value[1], GYR_Value[2],

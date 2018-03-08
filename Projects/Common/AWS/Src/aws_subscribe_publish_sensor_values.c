@@ -59,10 +59,11 @@
 #include "msg.h"
 
 #include "stm32l475e_iot01_hsensor.h"
+#include "vl53l0x_proximity.h"
 
 
 void MQTTcallbackHandler(AWS_IoT_Client *pClient, char *topicName, uint16_t topicNameLen, IoT_Publish_Message_Params *params, void *pData);
-int subscribe_publish_sensor_values(void);
+int subscribe_publish_sensor_values();
 
 /* Private defines ------------------------------------------------------------*/
 #define MQTT_CONNECT_MAX_ATTEMPT_COUNT 3
@@ -82,7 +83,7 @@ static char cSTopicName[MAX_SHADOW_TOPIC_LENGTH_BYTES] = "";
 /**
 * @brief This parameter will avoid infinite loop of publish and exit the program after certain number of publishes
 */
-static uint32_t publishCount = 60;
+static uint32_t publishCount = 10000;
 static float PreviousHumidityValue = 0;
 
 /* Functions Definition ------------------------------------------------------*/
@@ -220,7 +221,8 @@ int subscribe_publish_sensor_values(void)
     return -1;
   }
   
-  snprintf(cPTopicName, sizeof(cPTopicName), AWS_DEVICE_SHADOW_PRE "%s" AWS_DEVICE_SHADOW_UPDATE_TOPIC, deviceName);
+  //snprintf(cPTopicName, sizeof(cPTopicName), AWS_DEVICE_SHADOW_PRE "%s" AWS_DEVICE_SHADOW_UPDATE_TOPIC, deviceName);
+  snprintf(cPTopicName, sizeof(cPTopicName), "/Data/AB_Thing1");
   snprintf(cSTopicName, sizeof(cSTopicName), AWS_DEVICE_SHADOW_PRE "%s" AWS_DEVICE_SHADOW_UPDATE_ACCEPTED_TOPIC, deviceName);
   
   /*
@@ -360,30 +362,9 @@ int subscribe_publish_sensor_values(void)
     
     if (bp_pushed == BP_SINGLE_PUSH)
     {
-      /*if(strstr(ledstate, "Off")!= NULL)
-      {
-        strcpy(ledstate, "On");
-      }
-      else
-      {
-        strcpy(ledstate, "Off");
-      }
-      */
-      //printf("Sending the desired LED state to AWS.\n");
-      printf("Sending a random number to AWS.\n");
+      printf("Force update/publish to AWS.\n");
       
-      // create a random number
-      RND_NUM = rand() % 101 + 1;
-      char buffer[20];
-      itoa(RND_NUM, buffer, 10);
-
-      /* create desired message */
-      memset(cPayload, 0, sizeof(cPayload));
-      strcat(cPayload, aws_json_desired);
-      strcat(cPayload, "{\"RND_value\":\"");
-      strcat(cPayload, buffer);
-      strcat(cPayload, "\"}");
-      strcat(cPayload, aws_json_post);
+      PrepareMqttPayload(cPayload, sizeof(cPayload), NULL);
       
       paramsQOS1.payloadLen = strlen(cPayload) + 1;
 
@@ -396,25 +377,17 @@ int subscribe_publish_sensor_values(void)
           printf("\nPublished to topic %s:", cPTopicName);
           printf("%s\n", cPayload);
         }
-
-        if (publishCount > 0)
-        {
-          publishCount--;
-        }
       } while(MQTT_REQUEST_TIMEOUT_ERROR == rc && (publishCount > 0 || infinitePublishFlag));      
     }
     
 #ifdef  SENSOR
     timeCounter ++;
-    float currentHValue = BSP_HSENSOR_ReadHumidity();
-    //if (timeCounter >= TIMER_COUNT_FOR_SENSOR_PUBLISH)
-    // if outisde change limit, report
-    if (PreviousHumidityValue - currentHValue > 2 ||
-    	PreviousHumidityValue - currentHValue < -2   )
+    float currentHValue = VL53L0X_PROXIMITY_GetDistance();
+    if (timeCounter >= 60)// once a minute
     {
       timeCounter = 0;
             
-      PrepareMqttPayload(cPayload, sizeof(cPayload), NULL);           
+      PrepareMqttPayload(cPayload, sizeof(cPayload), NULL);
             
       paramsQOS1.payloadLen = strlen(cPayload) + 1;
             
@@ -426,11 +399,6 @@ int subscribe_publish_sensor_values(void)
         {
           printf("\nPublished to topic %s:\n", cPTopicName);
           printf("%s\n", cPayload);
-        }
-
-        if (publishCount > 0)
-        {
-          publishCount--;
         }
       } while((MQTT_REQUEST_TIMEOUT_ERROR == rc) && (publishCount > 0 || infinitePublishFlag));
     }
