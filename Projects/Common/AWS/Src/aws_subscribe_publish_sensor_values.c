@@ -74,8 +74,6 @@ int subscribe_publish_sensor_values();
 #define aws_json_post       "}}"
 
 /* Private variables ---------------------------------------------------------*/
-static char ledstate[] = { "Off" };
-static int RND_NUM = 0;
 static char cPTopicName[MAX_SHADOW_TOPIC_LENGTH_BYTES] = "";
 static char cSTopicName[MAX_SHADOW_TOPIC_LENGTH_BYTES] = "";
 /* Private macro -------------------------------------------------------------*/
@@ -383,7 +381,7 @@ int subscribe_publish_sensor_values(void)
 #ifdef  SENSOR
     timeCounter ++;
     float currentHValue = VL53L0X_PROXIMITY_GetDistance();
-    if (timeCounter >= 60)// once a minute
+    if (timeCounter >= 2)// 2 seconds
     {
       timeCounter = 0;
             

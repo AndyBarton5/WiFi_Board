@@ -68,6 +68,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
 
+static float    LIGHT_Value;
 static float    TEMPERATURE_Value;
 static float    HUMIDITY_Value;
 static float    PRESSURE_Value;
@@ -101,6 +102,8 @@ int init_sensors(void)
     ret = -1;
   }
   
+  LSENSOR_Init();
+
   if (PSENSOR_OK != BSP_PSENSOR_Init())
   {
     msg_error("BSP_PSENSOR_Init() returns %d\n", ret);
@@ -144,6 +147,8 @@ int PrepareMqttPayload(char * PayloadBuffer, int PayloadSize, char * deviceID)
   int BuffSize = PayloadSize;
   int snprintfreturn = 0;
 
+  LIGHT_Value = LSENSOR_ReadLight();
+
   TEMPERATURE_Value = BSP_TSENSOR_ReadTemp();
   HUMIDITY_Value = BSP_HSENSOR_ReadHumidity();
   PRESSURE_Value = BSP_PSENSOR_ReadPressure();
@@ -183,11 +188,11 @@ int PrepareMqttPayload(char * PayloadBuffer, int PayloadSize, char * deviceID)
 	  	  	  	  	  	  	   //"reported": {
   {
   snprintfreturn = snprintf( Buff, BuffSize,
-		   "{\"temperature\": %.2f, \"humidity\": %.2f, \"pressure\": %.2f, \"proximity\": %d, "
+		   "{\"LUX\": %.2f, \"temperature\": %.2f, \"humidity\": %.2f, \"pressure\": %.2f, \"proximity\": %d, "
            "\"acc_x\": %d, \"acc_y\": %d, \"acc_z\": %d, "
            "\"gyr_x\": %.0f, \"gyr_y\": %.0f, \"gyr_z\": %.0f, "
            "\"mag_x\": %d, \"mag_y\": %d, \"mag_z\": %d }",
-           TEMPERATURE_Value, HUMIDITY_Value, PRESSURE_Value, PROXIMITY_Value,
+		   LIGHT_Value, TEMPERATURE_Value, HUMIDITY_Value, PRESSURE_Value, PROXIMITY_Value,
            ACC_Value[0], ACC_Value[1], ACC_Value[2],
            GYR_Value[0], GYR_Value[1], GYR_Value[2],
            MAG_Value[0], MAG_Value[1], MAG_Value[2] );

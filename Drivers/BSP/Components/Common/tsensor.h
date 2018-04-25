@@ -87,6 +87,7 @@ typedef struct
   uint8_t    (*ReadStatus)(uint16_t);
   float      (*ReadTemp)(uint16_t); 
 }TSENSOR_DrvTypeDef;
+
 /**
   * @}
   */

@@ -84,6 +84,7 @@ typedef enum
   TSENSOR_ERROR
 }TSENSOR_Status_TypDef;
 
+
 /**
   * @}
   */
@@ -98,6 +99,10 @@ typedef enum
 /* Sensor Configuration Functions */
 uint32_t BSP_TSENSOR_Init(void);
 float BSP_TSENSOR_ReadTemp(void);
+
+void LSENSOR_Init(void);
+float LSENSOR_ReadLight(void);
+
 /**
   * @}
   */ 

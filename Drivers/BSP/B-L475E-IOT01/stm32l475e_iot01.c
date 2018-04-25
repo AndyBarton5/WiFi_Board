@@ -107,6 +107,8 @@ const uint16_t COM_TX_AF[COMn] = {DISCOVERY_COM1_TX_AF};
 const uint16_t COM_RX_AF[COMn] = {DISCOVERY_COM1_RX_AF};
 
 I2C_HandleTypeDef hI2cHandler;
+I2C_HandleTypeDef hI2c1Handler;
+
 UART_HandleTypeDef hDiscoUart;
 
 /**
@@ -414,6 +416,44 @@ static void I2Cx_MspInit(I2C_HandleTypeDef *i2c_handler)
   HAL_NVIC_SetPriority(DISCOVERY_I2Cx_ER_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(DISCOVERY_I2Cx_ER_IRQn);
 }
+// Andy's I2C1 version
+static void I2C1_MspInit(I2C_HandleTypeDef *i2c_handler)
+{
+  GPIO_InitTypeDef  gpio_init_structure;
+
+  /*** Configure the GPIOs ***/
+  /* Enable GPIO clock */
+  DISCOVERY_I2Cx_SCL_SDA_GPIO_CLK_ENABLE();
+
+  /* Configure I2C Tx, Rx as alternate function */
+  gpio_init_structure.Pin = GPIO_PIN_8 | GPIO_PIN_9;
+  gpio_init_structure.Mode = GPIO_MODE_AF_OD;
+  gpio_init_structure.Pull = GPIO_PULLUP;
+  gpio_init_structure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  gpio_init_structure.Alternate = GPIO_AF4_I2C1;
+  HAL_GPIO_Init(GPIOB, &gpio_init_structure);
+
+  HAL_GPIO_Init(GPIOB, &gpio_init_structure);
+
+  /*** Configure the I2C peripheral ***/
+  /* Enable I2C clock */
+  __HAL_RCC_I2C1_CLK_ENABLE();
+
+  /* Force the I2C peripheral clock reset */
+  __HAL_RCC_I2C1_FORCE_RESET();
+
+  /* Release the I2C peripheral clock reset */
+  __HAL_RCC_I2C1_RELEASE_RESET();
+
+  /* Enable and set I2Cx Interrupt to a lower priority */
+  HAL_NVIC_SetPriority(I2C1_EV_IRQn, 0x0E, 1);
+  HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
+
+  /* Enable and set I2Cx Interrupt to a lower priority */
+  HAL_NVIC_SetPriority(I2C1_ER_IRQn, 0x0E, 1);
+  HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
+}
+
 
 /**
   * @brief  DeInitializes I2C MSP.
@@ -433,6 +473,21 @@ static void I2Cx_MspDeInit(I2C_HandleTypeDef *i2c_handler)
   /* Disable I2C clock */
   DISCOVERY_I2Cx_CLK_DISABLE();
 }
+// Andy's I2C1 version
+static void I2C1_MspDeInit(I2C_HandleTypeDef *i2c_handler)
+{
+  GPIO_InitTypeDef  gpio_init_structure;
+
+  /* Configure I2C Tx, Rx as alternate function */
+  gpio_init_structure.Pin = GPIO_PIN_8 | GPIO_PIN_9;
+  HAL_GPIO_DeInit(GPIOB, gpio_init_structure.Pin);
+  /* Disable GPIO clock */
+  DISCOVERY_I2Cx_SCL_SDA_GPIO_CLK_DISABLE();
+
+  /* Disable I2C clock */
+  __HAL_RCC_I2C1_CLK_DISABLE();
+}
+
 
 /**
   * @brief  Initializes I2C HAL.
@@ -458,6 +513,27 @@ static void I2Cx_Init(I2C_HandleTypeDef *i2c_handler)
   /**Configure Analogue filter */
   HAL_I2CEx_ConfigAnalogFilter(i2c_handler, I2C_ANALOGFILTER_ENABLE);  
 }
+// Andy's I2C1 version
+static void I2C1_Init(I2C_HandleTypeDef *i2c_handler)
+{
+  /* I2C configuration */
+  i2c_handler->Instance              = I2C1;
+  i2c_handler->Init.Timing           = ((uint32_t)0xb042c3c7);
+  i2c_handler->Init.OwnAddress1      = 0;
+  i2c_handler->Init.AddressingMode   = I2C_ADDRESSINGMODE_7BIT;
+  i2c_handler->Init.DualAddressMode  = I2C_DUALADDRESS_DISABLE;
+  i2c_handler->Init.OwnAddress2      = 0;
+  i2c_handler->Init.GeneralCallMode  = I2C_GENERALCALL_DISABLE;
+  i2c_handler->Init.NoStretchMode    = I2C_NOSTRETCH_DISABLE;
+
+  /* Init the I2C */
+  I2C1_MspInit(i2c_handler);
+  HAL_I2C_Init(i2c_handler);
+
+  /**Configure Analog filter */
+  HAL_I2CEx_ConfigAnalogFilter(i2c_handler, I2C_ANALOGFILTER_ENABLE);
+}
+
 
 /**
   * @brief  DeInitializes I2C HAL.
@@ -468,6 +544,12 @@ static void I2Cx_DeInit(I2C_HandleTypeDef *i2c_handler)
 {  /* DeInit the I2C */
   I2Cx_MspDeInit(i2c_handler);
   HAL_I2C_DeInit(i2c_handler); 
+}
+// Andy's I2C1 version
+static void I2C1_DeInit(I2C_HandleTypeDef *i2c_handler)
+{  /* DeInit the I2C */
+  I2C1_MspDeInit(i2c_handler);
+  HAL_I2C_DeInit(i2c_handler);
 }
 
 /**
@@ -489,7 +571,7 @@ static HAL_StatusTypeDef I2Cx_ReadMultiple(I2C_HandleTypeDef *i2c_handler, uint8
   /* Check the communication status */
   if(status != HAL_OK)
   {
-    /* I2C error occured */
+    /* I2C error occurred */
     I2Cx_Error(i2c_handler, Addr);
   }
   return status;
@@ -564,7 +646,8 @@ static void I2Cx_Error(I2C_HandleTypeDef *i2c_handler, uint8_t Addr)
   */
 void SENSOR_IO_Init(void)
 {
-  I2Cx_Init(&hI2cHandler);
+	  I2Cx_Init(&hI2cHandler);
+	  I2C1_Init(&hI2c1Handler);
 }
 
 /**
@@ -573,7 +656,8 @@ void SENSOR_IO_Init(void)
   */
 void SENSOR_IO_DeInit(void)
 {
-  I2Cx_DeInit(&hI2cHandler);
+	  I2Cx_DeInit(&hI2cHandler);
+	  I2C1_DeInit(&hI2c1Handler);
 }
 
 /**
@@ -587,7 +671,10 @@ void SENSOR_IO_Write(uint8_t Addr, uint8_t Reg, uint8_t Value)
 {
   I2Cx_WriteMultiple(&hI2cHandler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT,(uint8_t*)&Value, 1);
 }
-
+void SENSOR_IO1_Write(uint8_t Addr, uint8_t Reg, uint8_t Value)
+{
+  I2Cx_WriteMultiple(&hI2c1Handler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT,(uint8_t*)&Value, 1);
+}
 /**
   * @brief  Reads a single data.
   * @param  Addr: I2C address
@@ -599,6 +686,14 @@ uint8_t SENSOR_IO_Read(uint8_t Addr, uint8_t Reg)
   uint8_t read_value = 0;
 
   I2Cx_ReadMultiple(&hI2cHandler, Addr, Reg, I2C_MEMADD_SIZE_8BIT, (uint8_t*)&read_value, 1);
+
+  return read_value;
+}
+uint8_t SENSOR_IO1_Read(uint8_t Addr, uint8_t Reg)
+{
+  uint8_t read_value = 0;
+
+  I2Cx_ReadMultiple(&hI2c1Handler, Addr, Reg, I2C_MEMADD_SIZE_8BIT, (uint8_t*)&read_value, 1);
 
   return read_value;
 }
@@ -616,6 +711,10 @@ uint16_t SENSOR_IO_ReadMultiple(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, uint
 {
  return I2Cx_ReadMultiple(&hI2cHandler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, Buffer, Length);
 }
+uint16_t SENSOR_IO1_ReadMultiple(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, uint16_t Length)
+{
+ return I2Cx_ReadMultiple(&hI2c1Handler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, Buffer, Length);
+}
 
 /**
   * @brief  Writes multiple data with I2C communication
@@ -629,6 +728,10 @@ uint16_t SENSOR_IO_ReadMultiple(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, uint
 void SENSOR_IO_WriteMultiple(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, uint16_t Length)
 {
   I2Cx_WriteMultiple(&hI2cHandler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, Buffer, Length);
+}
+void SENSOR_IO1_WriteMultiple(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, uint16_t Length)
+{
+  I2Cx_WriteMultiple(&hI2c1Handler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT, Buffer, Length);
 }
 
 /**
