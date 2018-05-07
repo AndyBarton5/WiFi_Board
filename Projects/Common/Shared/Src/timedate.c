@@ -58,6 +58,11 @@
 #define TIME_SOURCE_HTTP_PORT   443
 #define TIME_SOURCE_HTTP_PROTO  NET_PROTO_TLS
 
+#define WEATHER_SOURCE_HTTP_HOST   "http://api.wunderground.com/api/4ec7c86bbb6951f7/forecast/q/ID/Boise.json" //"api.openweathermap.org/data/2.5/forecast?id=5586437&appid=463a72c9e5fd29f1d0d85fd189eefcc0"
+#define WEATHER_SOURCE_HTTP_PORT   80
+#define WEATHER_SOURCE_HTTP_PROTO  NET_PROTO_TCP
+#define CITY_ID_BOISE			"5586437" // 328736
+
 /** Size of the HTTP read buffer. 
  *  Should be large enough to contain a complete HTTP response header. */
 #define NET_BUF_SIZE  1000
@@ -65,6 +70,8 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 static const char http_request[] = "HEAD / HTTP/1.1\r\nHost: "TIME_SOURCE_HTTP_HOST"\r\n\r\n";
+static const char http_W_request[] = "HEAD / HTTP/1.1\r\nHost: "WEATHER_SOURCE_HTTP_HOST"\r\n\r\n";
+
 
 /* Functions Definition ------------------------------------------------------*/
 
@@ -236,5 +243,111 @@ int setRTCTimeDateFromNetwork(bool force_apply)
   return rc;
 }
 
+int GetWeatherFromNetwork(bool force_apply)
+{
+  int rc = TD_OK;
+  int ret = NET_OK;
+  net_sockhnd_t socket = NULL;
+  int len = strlen(http_W_request);
+  char buffer[NET_BUF_SIZE + 1]; /* +1 to be sure that the buffer is closed by a \0, so that it may be parsed by string commands. */
+  memset(buffer, 0, sizeof(buffer));
+
+  ret = net_sock_create(hnet, &socket, WEATHER_SOURCE_HTTP_PROTO);
+  if (ret != NET_OK)
+  {
+    msg_error("Could not create the socket.\n");
+  }
+  else
+  {
+#define NET_READ_TIMEOUT  "3000"
+    ret |= net_sock_setopt(socket, "sock_read_timeout", (uint8_t*)NET_READ_TIMEOUT, sizeof(NET_READ_TIMEOUT));
+    if (WEATHER_SOURCE_HTTP_PROTO == NET_PROTO_TLS)
+    {
+      ret |= net_sock_setopt(socket, "tls_ca_certs", (void *)lUserConfig.tls_root_ca_cert, strlen(lUserConfig.tls_root_ca_cert));
+      ret |= net_sock_setopt(socket, "tls_server_name", (uint8_t*)WEATHER_SOURCE_HTTP_HOST, sizeof(WEATHER_SOURCE_HTTP_HOST));
+      ret |= net_sock_setopt(socket, (force_apply == true) ? "tls_server_noverification" : "tls_server_verification", NULL, 0);
+    }
+  }
+
+  if (ret != NET_OK)
+  {
+    msg_error("Could not set the socket options.\n");
+  }
+  else
+  {
+    ret = net_sock_open(socket, WEATHER_SOURCE_HTTP_HOST, WEATHER_SOURCE_HTTP_PORT);
+  }
+
+  if (ret == NET_AUTH)
+  {
+    msg_error("An incorrect system time may have resulted in a TLS authentication error.\n");
+    rc = TD_ERR_TLS_CERT;
+  }
+
+  if ( (ret != NET_OK) || (rc != TD_OK) )
+  {
+    msg_error("Could not open the socket.\n");
+  }
+  else
+  {
+    ret = net_sock_send(socket, (uint8_t *) http_W_request, len);
+
+    if (ret != len)
+    {
+      msg_error("Could not send %d bytes.\n", len);
+    }
+    else
+    {
+      char *dateStr = NULL;
+      int read = 0;
+      do
+      {
+        len = net_sock_recv(socket, (uint8_t *) buffer + read, NET_BUF_SIZE - read);
+        if (len > 0)
+        {
+          read += len;
+          dateStr = strstr(buffer, "Date: ");
+        }
+      } while ( (dateStr == NULL) && ((len >= 0) || (len == NET_TIMEOUT)) && (read < NET_BUF_SIZE));
+
+      printf(buffer);
+
+      if (dateStr == NULL)
+      {
+        msg_error("No 'Date:' line found in the HTTP response header.\n");
+        rc = TD_ERR_HTTP;
+      }
+      else
+      {
+        rc = TD_OK;
+        char prefix[8], dow[8], month[4];
+        int day, year, hour, min, sec;
+
+        memset(dow, 0, sizeof(dow));
+        memset(month, 0, sizeof(month));
+        day = year = hour = min = sec = 0;
+
+        // ********************************
+        int count = sscanf(dateStr, "%s %s %d %s %d %02d:%02d:%02d ", prefix, dow, &day, month, &year, &hour, &min, &sec);
+
+
+      }
+    }
+
+    ret = net_sock_close(socket);
+  }
+
+  if (socket != NULL)
+  {
+    ret |= net_sock_destroy(socket);
+  }
+  /* Translate a socket closure error in network error. */
+  if ((rc == TD_OK) && (ret != NET_OK))
+  {
+    rc = TD_ERR_CONNECT;
+  }
+
+  return rc;
+}
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

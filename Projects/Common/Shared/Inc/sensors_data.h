@@ -52,8 +52,12 @@
  extern "C" {
 #endif
 
+#define SENSOR_PUBLISH_PERIOD 10
+
+
 int init_sensors(void);
 int PrepareMqttPayload(char * PayloadBuffer, int PayloadSize, char * deviceID);
+float CloudTrend(void);
 
 #ifdef __cplusplus
 }

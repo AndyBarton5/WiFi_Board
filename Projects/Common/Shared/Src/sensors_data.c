@@ -50,7 +50,7 @@
 #include <stdio.h>
 #include "sensors_data.h"
 
-
+#include "timedate.h"
 #include "stm32l4xx_hal.h"
 #include "stm32l475e_iot01.h"
 #include "stm32l475e_iot01_tsensor.h"
@@ -76,6 +76,12 @@ static int16_t  ACC_Value[3];
 static float    GYR_Value[3];
 static int16_t  MAG_Value[3];
 static uint16_t PROXIMITY_Value;
+
+
+static int numSamplesAvg = 60 / SENSOR_PUBLISH_PERIOD; // roughly an hour's worth of an average
+static float L_AVG = 1;
+static float T_AVG = 1;
+static float H_AVG = 1;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Functions Definition ------------------------------------------------------*/
@@ -188,14 +194,10 @@ int PrepareMqttPayload(char * PayloadBuffer, int PayloadSize, char * deviceID)
 	  	  	  	  	  	  	   //"reported": {
   {
   snprintfreturn = snprintf( Buff, BuffSize,
-		   "{\"LUX\": %.2f, \"temperature\": %.2f, \"humidity\": %.2f, \"pressure\": %.2f, \"proximity\": %d, "
-           "\"acc_x\": %d, \"acc_y\": %d, \"acc_z\": %d, "
-           "\"gyr_x\": %.0f, \"gyr_y\": %.0f, \"gyr_z\": %.0f, "
-           "\"mag_x\": %d, \"mag_y\": %d, \"mag_z\": %d }",
-		   LIGHT_Value, TEMPERATURE_Value, HUMIDITY_Value, PRESSURE_Value, PROXIMITY_Value,
-           ACC_Value[0], ACC_Value[1], ACC_Value[2],
-           GYR_Value[0], GYR_Value[1], GYR_Value[2],
-           MAG_Value[0], MAG_Value[1], MAG_Value[2] );
+		   "{ \"Trend\": %.1f, \"LUX\": %.2f, \"temperature\": %.2f, \"humidity\": %.2f, \"pressure\": %.2f, "
+           "\"proximity\": %d }",
+		   CloudTrend(), LIGHT_Value, TEMPERATURE_Value, HUMIDITY_Value, PRESSURE_Value,
+		   PROXIMITY_Value);
   }
  #endif
   /* Check total size to be less than buffer size
@@ -219,6 +221,39 @@ int PrepareMqttPayload(char * PayloadBuffer, int PayloadSize, char * deviceID)
       msg_error("Data Pack Error\n");
       return -1;
   }
+}
+
+float ApproxRollingAverage (float avg, float new_sample) {
+
+    avg -= avg / numSamplesAvg;
+    avg += new_sample / numSamplesAvg;
+
+    return avg;
+}
+
+float CloudTrend()
+{
+	// Td = T-((100-RH)/5)
+	//
+	float trend = -1;
+
+	// update the L, T, H averages
+	L_AVG = ApproxRollingAverage(L_AVG, (float)LIGHT_Value);
+	T_AVG = ApproxRollingAverage(T_AVG, (float)TEMPERATURE_Value);
+	H_AVG = ApproxRollingAverage(H_AVG, (float)HUMIDITY_Value);
+
+	// something is in the way
+	if (PROXIMITY_Value <= 50)
+		return -1;
+
+	// too dark - don't care to predict cloud coverage at night
+	if (LIGHT_Value < 100)
+		return -1;
+
+	//calculate the rough dew point
+	float dp = (float)T_AVG - ((100.0-(float)H_AVG)/5.0);
+
+	return trend;
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

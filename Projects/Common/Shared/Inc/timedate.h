@@ -57,7 +57,7 @@
 #define TD_ERR_TLS_CERT  -4   /**< The server certificate verification failed. Applicable only when force_apply is false. */
 
 int setRTCTimeDateFromNetwork(bool force_apply);
-
+int GetWeatherFromNetwork(bool force_apply);
 
 #endif // TIMEDATE_H
 

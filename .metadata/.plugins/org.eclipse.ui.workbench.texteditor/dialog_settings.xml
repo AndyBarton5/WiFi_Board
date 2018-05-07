@@ -2,20 +2,25 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="HAL_RTC_GetDate" key="selection"/>
+		<item value="rtn" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
+			<item value="lux_value"/>
+			<item value="decision"/>
+			<item value="div"/>
+			<item value="https"/>
+			<item value="2"/>
+			<item value="__HAL_RCC_I2C1_CLK_ENABLE"/>
 			<item value="HAL_RTC_GetDate"/>
 			<item value="gettime"/>
-			<item value="topic"/>
-			<item value="JSON"/>
-			<item value="iot_error"/>
-			<item value="net_sock_recv_tcp_wifi"/>
 		</list>
 		<list key="replacehistory">
+			<item value="rtn"/>
+			<item value="value"/>
+			<item value="divedend"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">

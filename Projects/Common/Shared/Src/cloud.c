@@ -273,9 +273,9 @@ int platform_init(void)
   
   if (skip_reconf == true)
   {
-    printf("Push the User button (Blue) within the next 5 seconds if you want to update "
+    printf("Push the User button (Blue) within the next 3 seconds if you want to update "
            "the device security parameters or credentials.\n\n");
-    skip_reconf = (Button_WaitForPush(5000) == BP_NOT_PUSHED);
+    skip_reconf = (Button_WaitForPush(3000) == BP_NOT_PUSHED);
   }
   
   if (skip_reconf == false)

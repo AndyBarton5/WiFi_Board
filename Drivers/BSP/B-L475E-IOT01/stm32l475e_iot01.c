@@ -673,7 +673,7 @@ void SENSOR_IO_Write(uint8_t Addr, uint8_t Reg, uint8_t Value)
 }
 void SENSOR_IO1_Write(uint8_t Addr, uint8_t Reg, uint8_t Value)
 {
-  I2Cx_WriteMultiple(&hI2c1Handler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT,(uint8_t*)&Value, 1);
+  I2Cx_WriteMultiple(&hI2c1Handler, Addr, (uint16_t)Reg, I2C_MEMADD_SIZE_8BIT,(uint8_t*)&Value, 1); // just use the WriteMultiple once
 }
 /**
   * @brief  Reads a single data.

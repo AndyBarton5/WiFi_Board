@@ -375,13 +375,15 @@ int subscribe_publish_sensor_values(void)
           printf("\nPublished to topic %s:", cPTopicName);
           printf("%s\n", cPayload);
         }
-      } while(MQTT_REQUEST_TIMEOUT_ERROR == rc && (publishCount > 0 || infinitePublishFlag));      
+      } while(MQTT_REQUEST_TIMEOUT_ERROR == rc && (publishCount > 0 || infinitePublishFlag));
+
+      GetWeatherFromNetwork(true);
     }
     
 #ifdef  SENSOR
     timeCounter ++;
     float currentHValue = VL53L0X_PROXIMITY_GetDistance();
-    if (timeCounter >= 2)// 2 seconds
+    if (timeCounter >= SENSOR_PUBLISH_PERIOD)
     {
       timeCounter = 0;
             

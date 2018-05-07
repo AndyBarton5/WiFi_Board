@@ -129,29 +129,22 @@ void LSENSOR_Init(void)
 
 float LSENSOR_MATH(float ch0, float ch1)
 {
-	float decision = (float)ch1 / ch0;    //Hopefully this cast avoids int division
-	float lux_value;
+	float value = (float)ch1 / ch0;
+	float rtn;
 
-	if(decision <= 0.50){    // CH1/CH0 <= 0.50
-		lux_value = (0.0304 * ch0) - (0.062 * ch0 * pow(((float)ch1/ch0), 1.4));
-	}
+	// sorting table and sensor LUX formulas are found in the APDS9301 datasheet p. 4
+	if(value <= 0.50)
+		rtn = (0.0304 * ch0) - (0.062 * ch0 * pow(((float)value), 1.4));
+	else if(value > 0.50 && value <= 0.61)
+		rtn = (0.0224 * ch0) - (0.031 * ch1);
+	else if(value > 0.61 && value <= 0.80)
+		rtn = (0.0128 * ch0) - (0.0153 * ch1);
+	else if(value > 0.80 && value <= 1.30)
+		rtn = (0.00146 * ch1) - (0.00112 * ch1);
+	else
+		rtn = 0.0;
 
-	else if(decision > 0.50 && decision <= 0.61){    // 0.50 < CH1/CH0 <= 0.61
-		lux_value = (0.0224 * ch0) - (0.031 * ch1);
-	}
-
-	else if(decision > 0.61 && decision <= 0.80){    // 0.61 < CH1/CH0 <= 0.80
-		lux_value = (0.0128 * ch0) - (0.0153 * ch1);
-	}
-
-	else if(decision > 0.80 && decision <= 1.30){    // 0.80 < CH1/CH0 <= 1.30
-		lux_value = (0.00146 * ch1) - (0.00112 * ch1);
-	}
-	else{    // CH1/CH0 > 1.30
-		lux_value = 0.0;
-	}
-
-	return lux_value;
+	return rtn;
 }
 
 float LSENSOR_ReadLight(void)
